@@ -4,6 +4,7 @@ import numpy as np;
 import re;
 
 # random.seed(1);
+# Did this work
 
 def Normalization(input):
     return 1.0 / (1 + np.exp(-input));
