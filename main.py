@@ -175,6 +175,19 @@ Organize the quotes into training sets.
 
 """
 
+word_associations = {};
+current_word = "";
+for line in tempest_quotes.keys():
+    words = QuoteToWordsArray(line);
+    for word in words:
+        if(current_word == ""):
+            current_word = word;
+            continue;
+        word_associations[current_word] = word;
+        current_word = word;
+print(word_associations);
+
+
 training_data = [];
 testing_data = [];
 
@@ -203,7 +216,7 @@ Train the neural network to read the quotes.
 
 """
 
-net = NeuralNetwork([, 1000, 1000, len(speakers_dict)], constants.TRAINING_RATE);
+net = NeuralNetwork([2, 1000, 1000, len(speakers_dict)], constants.TRAINING_RATE);
 
 round = 0;
 while(True):
