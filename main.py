@@ -3,15 +3,10 @@ import math;
 import numpy as np;
 import re;
 
-# random.seed(1);
-# Did this work
+import constants;
 
-def Normalization(input):
-    return 1.0 / (1 + np.exp(-input));
-    
-def dNormalization(input):
-    return np.exp(-input) / np.square(1 + np.exp(-input));
-    
+# random.seed(1);
+
 class NeuralNetwork:
 
     def __init__(self, layer_sizes, learning_weight):
@@ -38,7 +33,7 @@ class NeuralNetwork:
         z_layers = [input];
         for layer in range(0, len(self.weights)):
             z = np.matmul(self.weights[layer], input) + self.biases[layer];
-            input = Normalization(z);
+            input = self.Normalization(z);
             z_layers.append(z);
         return z_layers;    
 
@@ -46,7 +41,7 @@ class NeuralNetwork:
         """ Calculate the cost of the function for a single input. """
 
         outputs = self.ForwardPropogate(input);
-        guess = Normalization(outputs[self.size]);
+        guess = self.Normalization(outputs[self.size]);
         solution = Solution(input);
 
         return np.dot(np.transpose(guess - solution)[0], np.transpose(guess - solution)[0]);
@@ -63,21 +58,21 @@ class NeuralNetwork:
 
         # cost = (output - solution)^2
         outputs = self.ForwardPropogate(input);
-        guess = Normalization(outputs[self.size]);
+        guess = self.Normalization(outputs[self.size]);
         solution = Solution(input);
 
         # C = (y^n - solution)^2
         # dC/dy^n = 2 * (y^n - solution)
         # delta^n = dC/dy^n * n'(z^n)
-        delta = 2 * (outputs[len(self.weights)] - solution) * dNormalization(outputs[len(self.weights)]);
+        delta = 2 * (outputs[len(self.weights)] - solution) * self.dNormalization(outputs[len(self.weights)]);
 
         dWeights = [];
         dBiases = [];
 
         for i in range(0, len(self.weights)):
-            dWeights.append(delta * np.transpose(Normalization(outputs[self.size - i - 1])));
+            dWeights.append(delta * np.transpose(self.Normalization(outputs[self.size - i - 1])));
             dBiases.append(delta);
-            delta = np.matmul(np.transpose(self.weights[self.size - i - 1]), delta) * dNormalization(outputs[self.size - i - 1]);
+            delta = np.matmul(np.transpose(self.weights[self.size - i - 1]), delta) * self.dNormalization(outputs[self.size - i - 1]);
 
         dWeights.reverse();
         dBiases.reverse();
@@ -91,16 +86,12 @@ class NeuralNetwork:
         for input in training_set:
             self.BackwardPropgate(input);
 
-"""
-Constants
+    def Normalization(self, input):
+        return 1.0 / (1 + np.exp(-input));
+    
+    def dNormalization(self, input):
+        return np.exp(-input) / np.square(1 + np.exp(-input));
 
-"""
-
-training_rate = 0.0001;
-""" The rate at which the neural network trains. """
-
-entry_length = 50;
-""" The length of the lines to be input. """
 
 """
 Read the quotes from the input files.
@@ -134,10 +125,10 @@ def FormatQuote(quote):
     quote = re.sub(r'[^\w\s]', '', quote);
     quote = quote.upper();
     
-    while(len(quote) < entry_length):
+    while(len(quote) < constants.ENTRY_LENGTH):
         quote += " ";
 
-    return ToArr(quote[:entry_length]);
+    return ToArr(quote[:constants.ENTRY_LENGTH]);
 
 tempest_quotes = {};
 """ Dictionary with keys as formatted tempest quotes and values as their speaker. """
@@ -154,6 +145,30 @@ for i in range(0, len(lines)):
 
 lines_file.close();
 characters_file.close();
+
+"""
+Create the word dictionary.
+
+"""
+
+def QuoteToWordsArray(line):
+    words = line.split(" ");
+    while('' in words):
+        words.remove('');
+    return words;
+
+words_dictionary = {};
+for line in tempest_quotes.keys():
+    words = QuoteToWordsArray(line);
+    for word in words:
+        if word not in words_dictionary.values():
+            words_dictionary[len(words_dictionary)] = word;
+words_lookup = {v: k for k, v in words_dictionary.items()}
+
+def WordToArray(word):
+    arr = np.array([ [0] for i in range(0, len(words_dictionary)) ]);
+    arr[words_lookup.get(word)][0] = 1;
+    return arr;
 
 """
 Organize the quotes into training sets.
@@ -188,7 +203,7 @@ Train the neural network to read the quotes.
 
 """
 
-net = NeuralNetwork([entry_length, 1000, 1000, len(speakers_dict)], training_rate);
+net = NeuralNetwork([, 1000, 1000, len(speakers_dict)], constants.TRAINING_RATE);
 
 round = 0;
 while(True):
